@@ -145,45 +145,6 @@ def get_chat_id_by_username(username, bot_token) -> int:
     raise ValueError(f"Chat ID для username {username} не найден.")
 
 
-@task
-def generate_performance_report() -> None:
-    """Генерация и сохранение отчета о производительности системы"""
-    
-    logger = get_run_logger()
-    
-    if len(latencies) == 0:
-        logger.info("No data to generate performance report.")
-        return
-    
-    avg_latency = statistics.mean(latencies)
-    max_latency = max(latencies)
-    min_latency = min(latencies)
-    total_requests = len(latencies)
-    
-    report = (
-        f"Performance Report:\n"
-        f"Total requests: {total_requests}\n"
-        f"Average latency: {avg_latency:.2f} seconds\n"
-        f"Max latency: {max_latency:.2f} seconds\n"
-        f"Min latency: {min_latency:.2f} seconds\n"
-        f"Current parallel requests: {current_parallel_requests}\n"
-    )
-    
-    # Логирование отчета
-    logger.info(report)
-    
-    # Сохранение отчета в файл
-    output_dir = "performance_reports"
-    os.makedirs(output_dir, exist_ok=True)
-    report_file_path = os.path.join(output_dir, "performance_report.txt")
-    
-    with open(report_file_path, "w") as file:
-        file.write(report)
-    
-    logger.info(f"Performance report saved to {report_file_path}")
-
-
-
 @flow(name="Process Ticker Flow with Delay")
 async def process_ticker_flow_with_delay(ticker, delay) -> None:
     """Flow для обработки тикера с отложенным выполнением"""
@@ -204,20 +165,11 @@ async def main_flow_with_delays(csv_file_path, bot_token, username, delay) -> No
     df = pd.read_csv(csv_file_path, delimiter=";")
     tickers = df["symbol"].unique()
 
-    # Создание задач для каждого тикера
     tasks = [process_ticker_flow_with_delay(ticker, delay) for ticker in tickers]
-    
-    # Ожидание завершения всех задач
     await asyncio.gather(*tasks)
 
-    # Отправка уведомления в Telegram
-    send_telegram_notification(bot_token, chat_id, "Flow execution completed")
-
-    # Генерация отчета о производительности после завершения всех задач
-    generate_performance_report()  
-
+    send_telegram_notification(bot_token, chat_id, "FFlow execution completed")
     logger.info("Flow execution completed.")
-
 
 
 if __name__ == "__main__":
